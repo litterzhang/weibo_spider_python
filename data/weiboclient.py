@@ -51,7 +51,10 @@ class WeiboRequest(object):
 			# res_origin = json.load(open('r', 'r', encoding='utf-8'))
 
 			data = list()
-			for card in res_origin.get('cards'):
+			cards = res_origin.get('cards')
+			if len(cards)==1 and cards[0].get('card_group'):
+				cards = cards[0].get('card_group')
+			for card in cards:
 				blog_item = card.get('mblog', None)
 				if not blog_item:
 					continue
