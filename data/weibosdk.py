@@ -39,7 +39,7 @@ class WeiboClient(object):
 			r = JsonRequest.get('https://api.weibo.com/2/account/rate_limit_status.json',
 				data={'access_token': self._access_token})
 			
-			print(json.dumps(r))
+			#print(json.dumps(r))
 
 
 	def get_access_token(self, AppKey, AppSercet, Code, RedirectUri):
@@ -55,4 +55,11 @@ class WeiboClient(object):
 			json.dump(access_token, fw, ensure_ascii=False)
 		return access_token
 
-weibo = WeiboClient()
+
+	def get_user_follows(self, uid, count=20):
+
+		r = JsonRequest.get('https://api.weibo.com/2/friendships/followers/active.json',
+			data={'access_token': self._access_token, 'uid': uid, 'count': count})
+		print(json.dumps(r))
+
+WeiboClient().get_user_follows('2307252891')

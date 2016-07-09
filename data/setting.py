@@ -6,8 +6,8 @@
 __author__='litterzhang'
 
 OAuth2Data = {
-	'AppKey': '282904689',
-	'AppSercet': 'b88b307cb3f2947e3dce0e544ba84f2b',
+	'AppKey': '42442540',
+	'AppSercet': '1b5fd80a7a18927d7193ee877b319f5a',
 	'RedirectUri': 'http://blog.hello-zhang.cn',
-	'Code': '790a0c4280c6bfa36968d305582af8c2'
+	'Code': 'c7255ce020f5e957bc268109a636e8ac'
 }
