@@ -6,6 +6,7 @@
 __author__='litterzhang'
 
 import requests
+import time
 
 from bs4 import BeautifulSoup
 
@@ -28,10 +29,10 @@ def get_proxy_ips():
 		res_ip['port'] = ip_attrs[2].text.strip()
 		res_ip['loc'] = ip_attrs[3].text.strip()
 		res_ip['type'] = ip_attrs[5].text.strip().lower()
-		res_ips.append(res_ip)
 
-		print(test_proxy_ip(res_ip))
-		break
+		if test_proxy_ip(res_ip):
+			res_ips.append(res_ip)
+	return res_ips
 
 #测试代理的可用性
 def test_proxy_ip(ip):
@@ -45,9 +46,14 @@ def test_proxy_ip(ip):
 	proxies[ip['type']] = ('%s://%s:%s' % (ip['type'], ip['addr'], ip['port']))
 
 	#请求weibo页面测试
-	r = requests.get('http://login.weibo.cn/login/', proxies=proxies)
-	r.encoding = 'utf-8'
-	print(r.text)
-	return True
+	try:
+		r = requests.get('http://login.weibo.cn/login/', proxies=proxies, timeout=0.5)	
+		
+		if res.status_code==200:
+			return True
+	except Exception as e:
+		return False		
 
-get_proxy_ips()
+
+ips = get_proxy_ips()
+print(ips)
