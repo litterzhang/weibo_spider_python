@@ -1,4 +1,4 @@
-#!D:\Python34\python.exe
+#!D:\Python35\python.exe
 # -*- coding: utf-8 -*-
 
 '配置文件'

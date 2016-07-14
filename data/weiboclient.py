@@ -1,4 +1,4 @@
-#!D:\Python34\python.exe
+#!D:\Python35\python.exe
 # -*- coding: utf-8 -*-
 
 '通过微博客户端获取微博'
