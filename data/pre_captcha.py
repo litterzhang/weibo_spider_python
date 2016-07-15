@@ -1,69 +1,64 @@
-# __author__ = 'Yaoshi'
+#!D:\Python35\python.exe
 # -*- coding: utf-8 -*-
+
+'对验证码进行预处理'
+
+__author__='litterzhang'
+
 import os
-from PIL import Image, ImageEnhance, ImageFilter, ImageGrab
-
-
-def Change_Image(im):
-    # im = Handle_Image(Docu_Name, Dist)
-    X_Value = Cut_X(im)
-    Y_Value = Cut_Y(im)
-
-    ims = []
-    Image_Value = []
-    Image_Values = []
-    Image_Value_Row = []
-    for k in range(4):
-        im1 = im.crop((X_Value[(2 * k)], Y_Value[(2 * k)], (X_Value[(2 * k + 1)] + 1),
-                       (Y_Value[(2 * k + 1)] + 1)))  # 切割图像为4个子图像
-        ims.append(im1)
-        for j in range(Y_Value[(2 * k)], (Y_Value[(2 * k + 1)] + 1)):
-            for i in range(X_Value[(2 * k)], (X_Value[(2 * k + 1)] + 1)):
-                if im.getpixel((i, j)) == 0:  # 黑色像素的值是0
-                    Image_Value_Row.append(1)
-                else:
-                    Image_Value_Row.append(0)
-            Image_Value.append(Image_Value_Row)  #
-            Image_Value_Row = []  #
-
-        Image_Values.append(Image_Value)
-        Image_Value = []
-
-    for im_n in ims:
-        im_n.show()
-    return Image_Values  # 返回切割后各个图像对应的黑白像素的0-1值所存储在其中的三维数组。
+from PIL import Image, ImageEnhance, ImageFilter
 
 # 处理图片以便后续的0-1二值化
 def Handle_Image(im):
-    #im = Image.open('%s' % (Dist + Docu_Name) + '.png')  # 打开对应目录的png格式的验证码图片
-    im = im.convert('RGB')
+    im = im.convert('L')
+
     for j in range(im.size[1]):
         for i in range(im.size[0]):
-            Gray = Change_Gray(im.getpixel((i, j)))  # 灰度化
-            im.putpixel([i, j], (Gray, Gray, Gray))
+            #Gray = Change_Gray(im.getpixel((i, j)))  # 灰度化
+            #im.putpixel([i, j], (Gray, Gray, Gray))
             if i == 0 or i == (im.size[0] - 1):  # 将图片的第一行和最后一行设为白色。
-                im.putpixel([i, j], (255, 255, 255))
+                im.putpixel([i, j], 255)
             if j == 0 or j == (im.size[1] - 1):  # 将图片的第一列和最后一列设为白色。
-                im.putpixel([i, j], (255, 255, 255))
+                im.putpixel([i, j], 255)
     enhancer = ImageEnhance.Contrast(im)  # 增加对比对
     im = enhancer.enhance(2)
     enhancer = ImageEnhance.Sharpness(im)  # 锐化
     im = enhancer.enhance(2)
     enhancer = ImageEnhance.Brightness(im)  # 增加亮度
     im = enhancer.enhance(2)
-    # im=im.convert('L').filter(ImageFilter.DETAIL) #滤镜效果
-    im = im.convert('1')  # 转为黑白图片
+    im = im.filter(ImageFilter.DETAIL) #滤镜效果
+
+    im = im.convert("1")
 
     im = Clear_Point(im)  # 清除周围8个像素都是白色的孤立噪点
     im = Clear_Point_Twice(im)  # 清除两个孤立的噪点：周围8个像素中有7个是白色，而唯一的黑色像素对应的他的邻域（他周围的8个像素）中唯一的黑色像素是自身。
     im = Clear_Point_Third(im)  # 清除第三种噪点：左右都是3个（含）以上的空白列，自身相邻的3个列上的X值投影不大于3.
 
+    im = Clear_line(im)
+    im = Clear_Point(im)
+    im = Clear_Point_Twice(im)
+    im = Clear_Point_Third(im) 
     return im
 
 # 改变灰度，查文献后发现据说按照下面的R，G，B数值的比例进行调整，图像的灰度最合适。
 def Change_Gray(RGB_Value):
     Gray = int((RGB_Value[0] * 299 + RGB_Value[1] * 587 + RGB_Value[2] * 114) / 1000)
     return Gray
+
+# 初步清除干扰线
+def Clear_line(im):
+    Image_Value = Caculate_X(im)
+    for i in range(1, len(Image_Value)-1):
+        if Image_Value[i]==1:
+            for j in range(1, im.size[1] - 1):
+                if im.getpixel((i, j))==0:
+                    im.putpixel([i, j], 255)
+        if Image_Value[i]==2:
+            for j in range(1, im.size[1] - 1):
+                if im.getpixel((i, j))==0 and im.getpixel((i, j+1))==0:
+                    im.putpixel([i, j], 255)
+                    im.putpixel([i, j+1], 255)
+    return im
 
 # 清除单个孤立点
 def Clear_Point(im):
@@ -188,136 +183,6 @@ def Min_Index(List1):
             Min_index = i
     return Min_index
 
-# 分割两个紧挨的数字
-def Cut_Two(ListRow, Image_Value):
-    index = 0
-    start = 0
-    if len(ListRow) >= 15:
-        start = 3
-    for i in range((1 + start), (len(ListRow) - 1)):
-        if Image_Value[ListRow[i]] <= Image_Value[ListRow[(i + 1)]] and Image_Value[ListRow[i]] <= 2:  #
-            index = i
-            break
-
-    return index
-
-# 纵向切割，依据X轴的投影，将图片切割为4张图片，并返回切割点的坐标
-def Cut_X(im):
-    Image_Value = Caculate_X(im)
-    print(Image_Value)
-    X_value = []
-    List0 = []
-    List1 = []
-    ListRow0 = []
-    ListRow1 = []
-    for i in range(len(Image_Value)):
-        if Image_Value[i] == 0 and len(ListRow1) == 0:  # 数字左侧的空白列
-            ListRow0.append(i)
-        elif Image_Value[i] == 0 and len(ListRow1) > 0:  # 数字右侧的空白列
-            List1.append(ListRow1)
-            ListRow1 = []
-            ListRow0.append(i)
-        elif Image_Value[i] > 0 and len(ListRow0) > 0:  # 数字列
-            List0.append(ListRow0)
-            ListRow0 = []
-            ListRow1.append(i)
-        elif Image_Value[i] > 0 and len(ListRow0) == 0:  # 数字列
-            ListRow1.append(i)
-    if len(List1) == 1:  # 如果只有1个数字右侧的空白列，放弃切割
-        for i in range(4):
-            X_value.append(1 + 12 * i)  #
-            X_value.append(12 * i + 12)
-    elif len(List1) == 2:  # 如果只有2个数字右侧的空白列，放弃切割
-        for i in range(4):
-            X_value.append(1 + 12 * i)  #
-            X_value.append(12 * i + 12)
-    elif len(List1) == 3:  # 如果有3个数字右侧的空白列，将数字列中最长的那段值进行拆分，拆分点在X轴投影的大于第五位后的第一个最低点。
-        Max_index = Max_Index(List1)
-        for i in range(len(List1)):
-            if i == Max_index:
-                index = Cut_Two(List1[i], Image_Value)
-                X_value.append(List1[i][0])
-                X_value.append(List1[i][index])
-                X_value.append(List1[i][(index + 1)])
-                X_value.append(List1[i][(len(List1[i]) - 1)])
-            else:
-                X_value.append(List1[i][0])
-                X_value.append(List1[i][(len(List1[i]) - 1)])
-    elif len(List1) == 4:  # 4个空白列
-        for i in range(len(List1)):
-            X_value.append(List1[i][0])
-            X_value.append(List1[i][(len(List1[i]) - 1)])
-
-    elif len(List1) == 5:  # 如果有5个数字右侧的空白列，取长度最长的4段。
-        Min_index = Min_Index(List1)
-        for i in range(len(List1)):
-            if i != Min_index:
-                X_value.append(List1[i][0])
-                X_value.append(List1[i][(len(List1[i]) - 1)])
-    elif len(List1) > 5:  # 大于5个直接放弃切割
-        for i in range(4):
-            X_value.append(1 + 12 * i)
-            X_value.append(12 * i + 12)
-        return X_value  # 横向切割 4张图片，4次投影，并返回切割点的坐标
-
-def Cut_Y(im):
-    Y_value = []
-    Image_Value = []
-    Cut_Xs = Cut_X(im)
-    print(Cut_Xs)
-    for k in range(4):
-        Image_Value = []
-        for j in range(im.size[1]):
-            X_pixel = 0
-            for i in range(Cut_Xs[(2 * k)], (Cut_Xs[(2 * k + 1)] + 1)):
-                if im.getpixel((i, j)) == 0:
-                    X_pixel = X_pixel + 1
-            Image_Value.append(X_pixel)
-        for i in range(len(Image_Value)):
-            if Image_Value[i] > 0:
-                Y_value.append(i)
-                break
-        for i in range((len(Image_Value) - 1), 0, (-1)):
-            if Image_Value[i] > 0:
-                Y_value.append(i)
-                break
-
-    return Y_value
-
-# 切割完毕后，将4个子图片的像素颜色信息写入到文本文件
-def Write_ImageFile(Docu_Name, Image_Value, Dist):
-    f = open('%s' % (Dist + Docu_Name + '.txt'), 'w')
-    f.write(str(Image_Value))
-    f.close()
-
-def Get_Array(Image_Value, i, j, k, m):
-    Result_Array = []
-    for n in range(k, (m + 1)):
-        Result_Array.append(Image_Value[n][i:(j + 1)])
-    return Result_Array
-
-# 为了进行二维数组的相似度的比较，需要定义一个计算矩阵（就是二维数组）距离的函数，注意，由于二维数组的长宽会不同，为了消除这个长宽的影响，矩阵距离要除以矩阵的长乘宽。
-def Caculate_Distance(Image_Value, Image_Lib):
-    Result_Num = 0
-    for i in range(len(Image_Value)):
-        for j in range(len(Image_Value[0])):
-            Result_Num = Result_Num + abs(Image_Value[i][j] - Image_Lib[i][j])  # 矩阵距离就是所有元素的差的绝对值的和
-    return round((float(Result_Num) / float(len(Image_Value) * len(Image_Value[0]))), 3)
-
-# 按照排序先后进行修正
-def Sort_Modify(a, Result_Temp):
-    a_sort = sorted(a.iteritems(), key=lambda d: d[1], reverse=True)
-    if a_sort[0][1] == a_sort[1][1]:
-        for i in range(len(Result_Temp)):
-            if Result_Temp[i] == a_sort[0][0] or Result_Temp[i] == a_sort[1][0]:  # 如果前5位中有2个都是2次出现的数字，提高出现在最前面的数字的概率
-                if Result_Temp[i] == a_sort[0][0]:
-                    a[a_sort[0][0]] = a[a_sort[0][0]] + 0.1
-                elif Result_Temp[i] == a_sort[1][0]:
-                    a[a_sort[1][0]] = a[a_sort[1][0]] + 0.1
-                break
-    a_sort = sorted(a.iteritems(), key=lambda d: d[1], reverse=True)
-    return a_sort
-
 # x轴投影
 def Get_X(Image_Value):
     X_Value = []
@@ -338,8 +203,16 @@ def Get_Y(Image_Value):
         Y_Value.append(X_pixel)
     return Y_Value
 
+# 处理图片
+def handle(loaddirpath, savedirpath):
+    for filename in os.listdir(loaddirpath):
+        filepath = os.path.join(loaddirpath, filename)
+
+        im = Image.open(filepath)
+        im = Handle_Image(im)
+
+        im.save(os.path.join(savedirpath, 'pre_%s' % filename))
+
 if __name__=='__main__':
-    im = Image.open('img/img_1468397745.png')
-    im = Handle_Image(im)
-    #Change_Image(im)
-    im.show()
+    handle(os.path.join(os.path.dirname(__file__), 'img'), \
+        os.path.join(os.path.dirname(__file__), 'pre_img'))
