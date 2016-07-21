@@ -10,7 +10,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 
 # 处理图片以便后续的0-1二值化
 def Handle_Image(im):
-    im = im.convert("RGB")
+    im = im.convert('RGB')
 
     for j in range(im.size[1]):
         for i in range(im.size[0]):
@@ -25,7 +25,7 @@ def Handle_Image(im):
             else:
                 im.putpixel([i, j], (255, 255, 255))
 
-    im = im.convert("1")
+    im = im.convert('1')
 
     im = Clear_Point(im)  # 清除周围8个像素都是白色的孤立噪点
     im = Clear_Point_Twice(im)  # 清除两个孤立的噪点：周围8个像素中有7个是白色，而唯一的黑色像素对应的他的邻域（他周围的8个像素）中唯一的黑色像素是自身。
