@@ -40,10 +40,10 @@ def cut_by_kmeans(data, k):
 	iter_max = 10
 	len_data = len(data)
 
-	# 聚类中心点选取
-	
-	cluster_centre = [data[i] for i in random.sample(range(len_data), k)]
-	
+	# 初始聚类中心点选取
+	# cluster_centre = [data[i] for i in random.sample(range(len_data), k)]
+	cluster_centre = [data[int(i*len_data/k)] for i in range(k)]
+
 	cluster_mark = [-1 for x in range(len_data)]
 
 	# 迭代iter_max次
@@ -92,7 +92,7 @@ def cut_by_kmeans(data, k):
 
 if __name__=='__main__':
 	input_dir = os.path.join(os.path.dirname(__file__), 'pre_img')
-	output_dir = os.path.join(os.path.dirname(__file__), 'kmeans_img')
+	output_dir = os.path.join(os.path.dirname(__file__), 'kmeans2_img')
 
 	for filename in os.listdir(input_dir):
 		filepath = os.path.join(input_dir, filename)
